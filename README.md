@@ -12,4 +12,4 @@
 
 Done in 5 min.
 
-[example](./example.png)
+![example](./example.png)
