@@ -257,10 +257,8 @@ async def parse_and_enrich_message(bot: Bot, group_id: int, event: Event) -> Lis
 async def process_images_in_message(msg_record: Dict, group_id: int, associated_images: List[str]):
     """检查消息中是否有图片，下载它们并更新关联图片列表"""
     for item in msg_record.get("content", []):
-        if item.get("type") == "image":
-            url = item.get("url")
-            if not url:
-                continue
+        if item["type"] == "image":
+            url = item["url"]
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
             img_name = f"{timestamp}_{hashlib.md5(url.encode()).hexdigest()}.webp"
             img_path = RECORD_PATH / str(group_id) / img_name
@@ -334,8 +332,8 @@ async def process_group_message(bot: Bot, event: Event):
         del active_at_tracking[group_id]
 
     # Part 3: 检查当前消息是否需要开启新的追踪会话
-    has_at = any(item.get("type") == "at" for item in content)
-    at_targets = [{"qq": item.get("qq"), "card": item.get("card")} for item in content if item.get("type") == "at"]
+    has_at = any(item["type"] == "at" for item in content)
+    at_targets = [{"qq": item["qq"], "card": item["card"]} for item in content if item["type"] == "at"]
 
     if has_at and str(user_id) != bot.bot_self_id:
         is_new_session_needed = True
@@ -576,10 +574,9 @@ async def generate_chat_image(bot: Bot, record: Dict) -> Optional[Image.Image]:
 
             for item in msg.get("content", []):
                 item_spacing = 8
-                item_type = item.get("type", "unknown")
 
-                if item_type == "text":
-                    wrapped_text = wrap_text(item.get("content", ""), cjk_font, max_bubble_width)
+                if item["type"] == "text":
+                    wrapped_text = wrap_text(item["content"], cjk_font, max_bubble_width)
                     bbox = draw.multiline_textbbox((0, 0), wrapped_text, font=cjk_font, spacing=5)
                     text_width = bbox[2] - bbox[0]
                     text_height = bbox[3] - bbox[1]
@@ -600,7 +597,7 @@ async def generate_chat_image(bot: Bot, record: Dict) -> Optional[Image.Image]:
                     )
                     inner_content_y += text_height + bubble_padding * 2 + item_spacing
 
-                elif item_type == "image":
+                elif item["type"] == "image":
                     local_path = item.get("local_path")
                     try:
                         if not (local_path and Path(local_path).exists()):
@@ -619,7 +616,7 @@ async def generate_chat_image(bot: Bot, record: Dict) -> Optional[Image.Image]:
                         draw.text((content_x + 55, inner_content_y + 40), "[图片]", font=cjk_font, fill="#999999")
                         inner_content_y += placeholder_h + item_spacing
 
-                elif item_type == "at":
+                elif item["type"] == "at":
                     at_text = f"@{item.get('card', item.get('qq', ''))}"
                     bbox = draw.textbbox((0, 0), at_text, font=cjk_font)
                     text_width, text_height = bbox[2] - bbox[0], bbox[3] - bbox[1]
