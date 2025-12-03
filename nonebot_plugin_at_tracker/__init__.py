@@ -509,7 +509,7 @@ async def generate_chat_image(bot: Bot, record: Dict) -> Optional[Image.Image]:
         draw = ImageDraw.Draw(img)
         
         draw.rectangle([0, 0, width, 50], fill='#4a90e2')
-        title = f"AT记录 by 小维151 - {record.get('start_time', '')}"
+        title = f"AT记录 by 小维151 - {record.get('start_time', '')}" # 这里的名字留着，不过分吧
         draw.text((padding, 15), title, font=cjk_font, fill='#ffffff')
         
         current_y = 65
