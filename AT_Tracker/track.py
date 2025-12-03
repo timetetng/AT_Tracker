@@ -526,6 +526,41 @@ def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int) -> str:
             lines.append(current_line)
     return "\n".join(lines)
 
+@at_tracker_sv.on_command(("清除at记录", "清空at记录", "删除at记录"), block=True)
+async def handle_clear_at_records(bot: Bot, event: Event):
+    """手动清除当前群组的AT记录"""
+    if not event.group_id:
+        return await bot.send("此命令仅限群组使用")
+
+    # 权限检查：仅允许管理员(3)、群主(2)或超管(1)执行
+    if event.user_pm > 3:
+        return await bot.send("你没有权限执行此操作，仅限管理员或群主使用。")
+
+    group_id = int(event.group_id)
+
+    try:
+        # 1. 清除内存中的记录
+        if group_id in at_records:
+            at_records[group_id] = []
+
+        # 2. 清除活跃的追踪会话（防止正在进行的追踪写入已删除的文件）
+        if group_id in active_at_tracking:
+            del active_at_tracking[group_id]
+
+        # 3. 删除本地文件
+        group_data_dir = RECORD_PATH / str(group_id)
+        if group_data_dir.exists():
+            # 删除整个文件夹及其内容
+            shutil.rmtree(group_data_dir)
+            # 重新创建空文件夹，保持目录结构
+            group_data_dir.mkdir(parents=True, exist_ok=True)
+
+        logger.info(f"群组 {group_id} 的AT记录已被用户 {event.user_id} 手动清空。")
+        await bot.send("当前群组的所有AT记录与缓存已成功清除。")
+
+    except Exception as e:
+        logger.error(f"清除记录失败: {e}")
+        await bot.send(f"清除记录时发生错误: {e}")
 
 async def generate_chat_image(bot: Bot, record: Dict, name_map: Dict[str, str] = None) -> Optional[Image.Image]:
     try:
@@ -546,7 +581,7 @@ async def generate_chat_image(bot: Bot, record: Dict, name_map: Dict[str, str] =
         draw = ImageDraw.Draw(img)
 
         draw.rectangle([0, 0, width, 50], fill="#4a90e2")
-        title = f"AT记录 by 小维151 - {record.get('start_time', '')}" # 这里的名字留着，不过分吧
+        title = f"AT记录 - {record.get('start_time', '')}" # 这里的名字留着，不过分吧
         draw.text((padding, 15), title, font=cjk_font, fill="#ffffff")
 
         current_y = 65
